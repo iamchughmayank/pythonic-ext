@@ -29,7 +29,9 @@ jobs:
 
       - name: Run Provider Contract Tests
         env:
+          PROVIDER_VERSION: ${{ github.sha }}
           PACT_BROKER_TOKEN: ${{ secrets.PACT_API_TOKEN }}
+          PROVIDER_BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           npm run test:contract-provider -- --broker-token=${PACT_BROKER_TOKEN}
       
@@ -40,4 +42,5 @@ jobs:
           APP_VERSION: ${{ github.sha }}
           DEPLOYMENT_ENVIRONMENT: 'production'
           PACT_BROKER_TOKEN: ${{ secrets.PACT_API_TOKEN }}
+          PROVIDER_BRANCH: ${{ github.head_ref || github.ref_name }}
         run: npm run test:contract:record:deployment --  --pacticipant ${APP_NAME} --version ${APP_VERSION} --environment ${DEPLOYMENT_ENVIRONMENT} --broker-token=${PACT_BROKER_TOKEN}
