@@ -1,0 +1,32 @@
+name: Contract Validation
+
+on: [repository_dispatch]
+
+jobs:
+  contract-verification:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+      - name: Set up Node.js environment
+        uses: actions/setup-node@v3
+        with:
+          cache: npm
+          node-version-file: '.nvmrc'
+
+      - name: Install dependencies
+        run: npm install
+      - name: Start app
+        run: |
+          npm start & npx wait-on http://localhost:3000
+
+      - name: Run Provider Contract Tests
+        env:
+          PROVIDER_VERSION: ${{ github.sha || github.ref }}
+          PACT_URL: ${{ github.event.client_payload.pact_url }}
+          PACT_BROKER_TOKEN: ${{ secrets.PACT_API_TOKEN }}
+          PROVIDER_BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          npm run test:contract-provider -- --broker-token=${PACT_BROKER_TOKEN}

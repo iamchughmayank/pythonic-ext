@@ -1,0 +1,44 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  provider-verification:
+    name: Validate provider contract Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+      - name: Set up Node.js environment
+        uses: actions/setup-node@v3
+        with:
+          cache: npm
+          node-version-file: '.nvmrc'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Start app
+        run: |
+          npm start & npx wait-on http://localhost:3000
+
+      - name: Run Provider Contract Tests
+        env:
+          PACT_BROKER_TOKEN: ${{ secrets.PACT_API_TOKEN }}
+        run: |
+          npm run test:contract-provider -- --broker-token=${PACT_BROKER_TOKEN}
+      
+      - name: Record Deployment
+        if: (github.ref_name == 'master')
+        env:
+          APP_NAME: 'MyTestProvider'
+          APP_VERSION: ${{ github.sha }}
+          DEPLOYMENT_ENVIRONMENT: 'production'
+          PACT_BROKER_TOKEN: ${{ secrets.PACT_API_TOKEN }}
+        run: npm run test:contract:record:deployment --  --pacticipant ${APP_NAME} --version ${APP_VERSION} --environment ${DEPLOYMENT_ENVIRONMENT} --broker-token=${PACT_BROKER_TOKEN}
